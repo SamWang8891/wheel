@@ -36,6 +36,10 @@ body,
   height: 100%;
 }
 
+html {
+  overflow-x: hidden;
+}
+
 body {
   margin: 0;
   color: var(--ink);
@@ -44,6 +48,7 @@ body {
   letter-spacing: 0.01em;
   background: var(--bg-0);
   min-height: 100vh;
+  width: 100%;
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -107,14 +112,18 @@ button {
 
 .app {
   position: relative;
-  max-width: 1280px;
+  max-width: min(1280px, 100%);
   margin: 0 auto;
   padding: 36px 28px 96px;
+  padding-left: max(28px, env(safe-area-inset-left));
+  padding-right: max(28px, env(safe-area-inset-right));
 }
 
 @media (max-width: 720px) {
   .app {
     padding: 22px 16px 72px;
+    padding-left: max(16px, env(safe-area-inset-left));
+    padding-right: max(16px, env(safe-area-inset-right));
   }
 }
 
@@ -122,12 +131,16 @@ button {
 
 .masthead {
   display: grid;
-  grid-template-columns: auto 1fr auto;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: end;
   gap: 18px;
   padding-bottom: 22px;
   border-bottom: 1px solid var(--line);
   margin-bottom: 36px;
+}
+
+.masthead > * {
+  min-width: 0;
 }
 
 .masthead__brand {
@@ -196,6 +209,9 @@ button {
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
+  display: inline-block;
+  padding: 0.08em 0.12em 0.04em 0.04em;
+  margin: -0.08em -0.12em -0.04em -0.04em;
 }
 
 .masthead__meta {
@@ -274,7 +290,8 @@ button {
   position: relative;
   --rim: 22px;
   /* leave room for the rim on each side + the app padding */
-  width: min(560px, calc(100vw - 32px - var(--rim) * 2));
+  width: min(560px, 100%, calc(100vw - 56px - var(--rim) * 2));
+  max-width: 100%;
   aspect-ratio: 1 / 1;
   display: flex;
   align-items: center;
@@ -531,7 +548,7 @@ button {
 .option {
   position: relative;
   display: grid;
-  grid-template-columns: 28px 1fr 36px;
+  grid-template-columns: 28px minmax(0, 1fr) 36px;
   align-items: center;
   gap: 10px;
   padding: 4px 4px 4px 0;
@@ -577,6 +594,8 @@ button {
 
 .option__input {
   flex: 1;
+  min-width: 0;
+  width: 100%;
   background: transparent;
   border: 0;
   outline: 0;
@@ -773,17 +792,41 @@ button {
   color: var(--ink);
 }
 
-.history__head button {
+.history__clear {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--glass-2);
   font-family: var(--mono);
   font-size: 10px;
   letter-spacing: 0.22em;
-  color: var(--ink-mute);
+  color: var(--ink-dim);
   text-transform: uppercase;
-  transition: color 0.15s ease;
+  transition: color 0.15s ease, border-color 0.15s ease,
+    background 0.15s ease, transform 0.1s ease;
 }
 
-.history__head button:hover {
+.history__clear:hover:not(:disabled) {
   color: var(--hot);
+  border-color: rgba(255, 93, 143, 0.45);
+  background: rgba(255, 93, 143, 0.08);
+}
+
+.history__clear:active:not(:disabled) {
+  transform: scale(0.96);
+}
+
+.history__clear:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.history__clear svg {
+  width: 11px;
+  height: 11px;
 }
 
 .history__list {

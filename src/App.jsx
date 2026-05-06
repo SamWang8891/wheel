@@ -362,9 +362,28 @@ export default function App() {
             <div className="history">
               <div className="history__head">
                 <h3>近期戰果</h3>
-                {history.length > 0 && (
-                  <button onClick={() => setHistory([])}>清除</button>
-                )}
+                <button
+                  className="history__clear"
+                  onClick={() => {
+                    if (history.length === 0) return
+                    if (confirm('確定要清除所有近期戰果嗎？')) {
+                      setHistory([])
+                    }
+                  }}
+                  disabled={history.length === 0}
+                  aria-label="清除近期戰果"
+                >
+                  <svg viewBox="0 0 24 24" fill="none" aria-hidden>
+                    <path
+                      d="M5 7h14M10 7V5a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2M7 7l1 12a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2l1-12"
+                      stroke="currentColor"
+                      strokeWidth="1.6"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                  清除
+                </button>
               </div>
               {history.length === 0 ? (
                 <div className="history__empty">— 尚無紀錄 —</div>
