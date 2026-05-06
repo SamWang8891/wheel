@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import Wheel from './Wheel.jsx'
 
-const DEFAULT_ITEMS = ['吃滷肉飯', '吃牛肉麵', '吃便當', '叫外送', '泡麵', '不吃了']
+const DEFAULT_ITEMS = ['YES', 'NO']
 
 // editorial-feeling palette (warm, cohesive, never saturated rainbow)
 const PALETTE = [
@@ -36,7 +36,7 @@ export default function App() {
 
   const tickAudioRef = useRef(null)
   const winAudioRef = useRef(null)
-  const tickIntervalRef = useRef(null)
+  const tickRafRef = useRef(null)
 
   // persistence
   useEffect(() => {
@@ -150,25 +150,34 @@ export default function App() {
     setSpinning(true)
     setRotation(next)
 
-    // ticking sounds with decaying frequency
-    let elapsed = 0
+    // tick whenever the pointer crosses a slice border. Sample the same
+    // cubic-bezier curve CSS uses for the transform so the JS-tracked
+    // angle stays in lockstep with the visual rotation.
     const total = 5600
-    const schedule = () => {
-      // approximate easing: more ticks at start, slower toward end
-      const t = elapsed / total
-      const interval = 60 + 700 * t * t
-      tickIntervalRef.current = setTimeout(() => {
+    const ease = cubicBezier(0.18, 0.86, 0.24, 1)
+    const startTime = performance.now()
+    const startRot = rotation
+    const endRot = next
+    const step = 360 / cleaned.length
+    const segmentAt = (deg) => Math.floor(-deg / step + 0.5)
+    let lastSeg = segmentAt(startRot)
+    const frame = () => {
+      const elapsed = performance.now() - startTime
+      const t = Math.min(elapsed / total, 1)
+      const r = startRot + (endRot - startRot) * ease(t)
+      const seg = segmentAt(r)
+      if (seg !== lastSeg) {
+        lastSeg = seg
         tickAudioRef.current?.play()
         setTickPulse((n) => n + 1)
-        elapsed += interval
-        if (elapsed < total - 80) schedule()
-      }, interval)
+      }
+      if (t < 1) tickRafRef.current = requestAnimationFrame(frame)
     }
-    schedule()
+    tickRafRef.current = requestAnimationFrame(frame)
 
     setTimeout(() => {
       setSpinning(false)
-      clearTimeout(tickIntervalRef.current)
+      cancelAnimationFrame(tickRafRef.current)
       const label = cleaned[idx]
       const entry = { label, ts: Date.now() }
       setWinner(entry)
@@ -568,6 +577,30 @@ function loadHistory() {
     if (Array.isArray(parsed)) return parsed
   } catch {}
   return []
+}
+
+function cubicBezier(x1, y1, x2, y2) {
+  const sampleX = (t) =>
+    3 * (1 - t) * (1 - t) * t * x1 + 3 * (1 - t) * t * t * x2 + t * t * t
+  const sampleY = (t) =>
+    3 * (1 - t) * (1 - t) * t * y1 + 3 * (1 - t) * t * t * y2 + t * t * t
+  const sampleDX = (t) =>
+    3 * (1 - t) * (1 - t) * x1 +
+    6 * (1 - t) * t * (x2 - x1) +
+    3 * t * t * (1 - x2)
+  return (progress) => {
+    if (progress <= 0) return 0
+    if (progress >= 1) return 1
+    let t = progress
+    for (let i = 0; i < 8; i++) {
+      const x = sampleX(t) - progress
+      if (Math.abs(x) < 1e-6) break
+      const dx = sampleDX(t)
+      if (Math.abs(dx) < 1e-6) break
+      t -= x / dx
+    }
+    return sampleY(t)
+  }
 }
 
 function formatTime() {
